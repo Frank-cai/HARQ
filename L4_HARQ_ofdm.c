@@ -184,6 +184,7 @@ int main(int argc, char** argv) {
             */
             if (!ackFlg && retrans_cnt < max_retrans){
                 retrans_cnt += 1;
+                arq_rate[i] += 1;
             }
             else{
                 // generate information bits
@@ -270,7 +271,7 @@ int main(int argc, char** argv) {
 
 
             // deinterleaving
-            bit_deinterleaver(rxBits, deintMat, bitsPerBlock, cwLen);
+            bit_deinterleaver(rxBits, deintMat, numBits, cwLen);
 
             // FEC decoder
             if (!fec_decoder(rxBits, rxInfoBits, numBits)){ackFlg = 1;}
