@@ -54,7 +54,7 @@ int main(int argc, char** argv) {
     }
     
     // set number of bits per symbol (corresponding to QPSK)
-    int bitsPerSymbol = QAM64;
+    int bitsPerSymbol = QAM16;
 
     // set equalizer type (MMSE)
     equalizerType equalizer = MMSE;
@@ -153,6 +153,7 @@ int main(int argc, char** argv) {
 
     // retransmission counter
     int retrans_cnt = 0;
+    int flag = 1;
 
     // terminal output header
     printf("\nEbNo\tBER\t\tARQ_rate\n");
@@ -182,19 +183,16 @@ int main(int argc, char** argv) {
             // FEC encoding and interleaving
 
             */
-            if (!ackFlg && retrans_cnt < max_retrans){
-                retrans_cnt += 1;
-                arq_rate[i] += 1;
-            }
-            else{
+            if (ackFlg == 1){
                 // generate information bits
-                generate_info_bits(numInfoBits, txInfoBits);}
+                generate_info_bits(numInfoBits, txInfoBits);
+                // FEC encoder
+                fec_encoder(txInfoBits, txBits, numInfoBits);
+                // interleaving
+                bit_interleaver(txBits, intMat, numBits, cwLen);
+            }
 
-            // FEC encoder
-            fec_encoder(txInfoBits, txBits, numInfoBits);
             
-            // interleaving
-            bit_interleaver(txBits, intMat, numBits, cwLen);
 
             // modulate bit sequence
             generate_symbols(txBits, bitsPerSymbol, SYMBOLS_PER_BLOCK, txSymI, txSymQ);
@@ -274,8 +272,31 @@ int main(int argc, char** argv) {
             bit_deinterleaver(rxBits, deintMat, numBits, cwLen);
 
             // FEC decoder
-            if (!fec_decoder(rxBits, rxInfoBits, numBits)){ackFlg = 1;}
-            else{ackFlg = 0;}
+
+            flag = fec_decoder(rxBits, rxInfoBits, numBits);
+            // printf("%d\t",flag);
+            if (flag == 0){
+                ackFlg = 1;
+                retrans_cnt = 0;
+            }
+            else{
+                if(retrans_cnt == max_retrans){
+                    ackFlg = 1;
+                    retrans_cnt = 0;
+                }
+                else if (retrans_cnt > 0)
+                {
+                    ackFlg = 0;
+                    retrans_cnt += 1;
+                    arq_rate[i] += 1;
+                }
+                else
+                {
+                    ackFlg = 0;
+                    retrans_cnt += 1;
+                    arq_rate[i] += 1;
+                }
+            }
 
             if (ackFlg) {
                 // count bit and symbol errors in the block

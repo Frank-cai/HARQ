@@ -64,7 +64,8 @@ void bit_interleaver(unsigned char bitSeq[], unsigned char mat[], int bitSeqLen,
         mat[i] = bitSeq[i];
     }
     for(int j = 0; j < bitSeqLen; j++){
-        bitSeq[j] = mat[(j%(bitSeqLen/numCols))*numCols+floor(j/(bitSeqLen/numCols))];
+        int k = (j%(bitSeqLen/numCols))*numCols+floor(j/(bitSeqLen/numCols));
+        bitSeq[j] = mat[k];
     }
 }
 
@@ -92,7 +93,7 @@ int hamming84_decoder(unsigned char encBits[], unsigned char infoBits[]) {
     s1 = (encBits[0]+encBits[1]+encBits[3]+encBits[4])%2;
     s2 = (encBits[0]+encBits[2]+encBits[3]+encBits[5])%2;
     s3 = (encBits[1]+encBits[2]+encBits[3]+encBits[6])%2;
-    
+    // printf("%d%d%d%d\t",s0,s1,s2,s3);
     if((s0+s1+s2+s3) == 0)
     {
         infoBits[0] = encBits[0];
@@ -101,12 +102,16 @@ int hamming84_decoder(unsigned char encBits[], unsigned char infoBits[]) {
         infoBits[3] = encBits[3];
         return 0;
     }
-    else if ((s1+s2+s3) > 0 && s0 == 1)
+    else if ((s1+s2+s3) > 1)
     {
-        infoBits[0] = (s1+s2+encBits[0])%2;
-        infoBits[1] = (s1+s3+encBits[1])%2;
-        infoBits[2] = (s2+s3+encBits[2])%2;
-        infoBits[3] = (s1+s2+s3+encBits[3])%2;
+        infoBits[0] = encBits[0];
+        infoBits[1] = encBits[1];
+        infoBits[2] = encBits[2];
+        infoBits[3] = encBits[3];
+        if(s1+s2+s3 == 3){infoBits[3] = (1+encBits[3])%2;}
+        else if(s1+s2 == 2){infoBits[0] = (1+encBits[0])%2;}   
+        else if(s1+s3 == 2){infoBits[1] = (1+encBits[1])%2;}
+        else if(s2+s3 == 2){infoBits[2] = (1+encBits[2])%2;}
         return 1;
     }
     else{
@@ -134,13 +139,14 @@ int hamming84_decoder(unsigned char encBits[], unsigned char infoBits[]) {
  *              1 - at least one codeword is uncorrectable
  */
 int fec_decoder(unsigned char encBits[], unsigned char infoBits[], int infoBitsLen) {
-    int flg = 0;
+    int count = 0, flag = 0;
     for(int i = 0; i < infoBitsLen/4; i++){
-        if (hamming84_decoder(encBits, infoBits) == 2){flg = 1;};
+        count = hamming84_decoder(encBits, infoBits);
+        if(count == 2){flag = 1;}
         infoBits += 4;
         encBits += 8;
     }
-    return flg;
+    return flag;
 }
 
 
@@ -162,7 +168,8 @@ int fec_decoder(unsigned char encBits[], unsigned char infoBits[], int infoBitsL
  */
 void bit_deinterleaver(unsigned char bitSeq[], unsigned char mat[], int bitSeqLen, int numCols) {
     for(int i = 0; i < bitSeqLen; i++){
-        mat[i] = mat[(i%(bitSeqLen/numCols))*numCols+floor(i/(bitSeqLen/numCols))];
+        int k = (i%(bitSeqLen/numCols))*numCols+floor(i/(bitSeqLen/numCols));
+        mat[k] = bitSeq[i];
     }
     for(int j = 0; j < bitSeqLen; j++){
         bitSeq[j] = mat[j];
