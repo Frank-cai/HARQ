@@ -35,9 +35,7 @@ void hamming84_encoder(unsigned char infoBits[], unsigned char encBits[]) {
  */
 void fec_encoder(unsigned char infoBits[], unsigned char encBits[], int infoBitsLen) {
     for(int i = 0; i < infoBitsLen/4; i++){
-        hamming84_encoder(infoBits, encBits);
-        infoBits += 4;
-        encBits += 8;
+        hamming84_encoder(infoBits + 4*i, encBits + 8*i);
     }
 }
 
@@ -93,7 +91,7 @@ int hamming84_decoder(unsigned char encBits[], unsigned char infoBits[]) {
     s1 = (encBits[0]+encBits[1]+encBits[3]+encBits[4])%2;
     s2 = (encBits[0]+encBits[2]+encBits[3]+encBits[5])%2;
     s3 = (encBits[1]+encBits[2]+encBits[3]+encBits[6])%2;
-    // printf("%d%d%d%d\t",s0,s1,s2,s3);
+
     if((s0+s1+s2+s3) == 0)
     {
         infoBits[0] = encBits[0];
@@ -102,7 +100,7 @@ int hamming84_decoder(unsigned char encBits[], unsigned char infoBits[]) {
         infoBits[3] = encBits[3];
         return 0;
     }
-    else if ((s1+s2+s3) > 1)
+    else if ((s1+s2+s3) > 1 && s0 == 1)
     {
         infoBits[0] = encBits[0];
         infoBits[1] = encBits[1];
@@ -141,10 +139,8 @@ int hamming84_decoder(unsigned char encBits[], unsigned char infoBits[]) {
 int fec_decoder(unsigned char encBits[], unsigned char infoBits[], int infoBitsLen) {
     int count = 0, flag = 0;
     for(int i = 0; i < infoBitsLen/4; i++){
-        count = hamming84_decoder(encBits, infoBits);
+        count = hamming84_decoder(encBits + 8*i, infoBits + 4*i);
         if(count == 2){flag = 1;}
-        infoBits += 4;
-        encBits += 8;
     }
     return flag;
 }

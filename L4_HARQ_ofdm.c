@@ -164,6 +164,8 @@ int main(int argc, char** argv) {
         // initialize bit error and retransmission rate
         ber[i] = 0.0;
         arq_rate[i] = 0.0;
+        ackFlg = 1;
+        retrans_cnt = 0;
 
         // Initialize/reset multipath fading simulator
         multipath_fading_init(N, numTaps, fDT, alpha, phi);
@@ -186,13 +188,13 @@ int main(int argc, char** argv) {
             if (ackFlg == 1){
                 // generate information bits
                 generate_info_bits(numInfoBits, txInfoBits);
+
                 // FEC encoder
                 fec_encoder(txInfoBits, txBits, numInfoBits);
+
                 // interleaving
                 bit_interleaver(txBits, intMat, numBits, cwLen);
             }
-
-            
 
             // modulate bit sequence
             generate_symbols(txBits, bitsPerSymbol, SYMBOLS_PER_BLOCK, txSymI, txSymQ);
@@ -273,8 +275,8 @@ int main(int argc, char** argv) {
 
             // FEC decoder
 
-            flag = fec_decoder(rxBits, rxInfoBits, numBits);
-            // printf("%d\t",flag);
+            flag = fec_decoder(rxBits, rxInfoBits, numInfoBits);
+
             if (flag == 0){
                 ackFlg = 1;
                 retrans_cnt = 0;
